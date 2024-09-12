@@ -48,7 +48,7 @@ Resources:
       DistributionConfig:
         DefaultRootObject: index.html
         Origins:
-          - DomainName: !GetAtt Bucket.DomainName
+          - DomainName: !Sub "${Bucket.DomainName}.s3-website-${AWS::Region}.amazonaws.com"
             OriginPath: ""
             Id: myS3Origin
             S3OriginConfig:
@@ -64,3 +64,9 @@ Resources:
         HttpVersion: http2
         Enabled: true
         IPV6Enabled: true
+
+Outputs:
+  outputS3WebsiteURL:
+    Value: !GetAtt Bucket.WebsiteURL
+  outputS3BucketRegionalName:
+    Value: !GetAtt Bucket.RegionalDomainName
