@@ -1,5 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
+Description: "Create S3 bucket sttaic website with CloudFront distribution"
+
 Parameters:
   DomainName:
     Type: String
@@ -8,14 +10,19 @@ Resources:
   Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      AccessControl: Private
       BucketName: !Ref DomainName
       VersioningConfiguration:
         Status: Enabled
       WebsiteConfiguration:
         IndexDocument: index.html
 
-  s3BucketPolicy:
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Ref DomainName
+
+  s3ReadPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
       Bucket: !Ref Bucket
@@ -26,7 +33,9 @@ Resources:
             Effect: "Allow"
             Principal:
               Service: "cloudfront.amazonaws.com"
-            Resource: !Sub "${Bucket.Arn}/*"
+            Resource:
+              - !Sub "${Bucket.Arn}/*"
+              - !Sub "${Bucket.Arn}"
             Condition:
               StringEquals:
                 "aws:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
@@ -36,23 +45,23 @@ Resources:
     DependsOn: Bucket
     Properties:
       DistributionConfig:
+        DefaultRootObject: index.html
         Origins:
           - DomainName: !GetAtt Bucket.DomainName
-            OriginPath: /index.html
+            OriginPath: ""
             Id: myS3Origin
-            S3OriginConfig: {}
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub >-
+                origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}
         DefaultCacheBehavior:
+          Compress: true
           TargetOriginId: myS3Origin
           AllowedMethods:
             - GET
             - HEAD
-            - PUT
-            - POST
-            - DELETE
-            - PATCH
-            - OPTIONS
           ViewerProtocolPolicy: redirect-to-https
           ForwardedValues:
             QueryString: false
+        HttpVersion: http2
         Enabled: true
         IPV6Enabled: true
