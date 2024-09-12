@@ -38,7 +38,8 @@ Resources:
               - !Sub "${Bucket.Arn}"
             Condition:
               StringEquals:
-                "aws:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+                "aws:SourceArn": !Sub >-
+                  "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
 
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
@@ -60,8 +61,6 @@ Resources:
             - GET
             - HEAD
           ViewerProtocolPolicy: redirect-to-https
-          ForwardedValues:
-            QueryString: false
         HttpVersion: http2
         Enabled: true
         IPV6Enabled: true
