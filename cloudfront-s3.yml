@@ -12,24 +12,23 @@ Parameters:
 Resources:
   SSLCertificate:
     Type: AWS::CertificateManager::Certificate
+    DependsOn: HostedZone
     Properties:
       DomainName: !Ref WebSiteDomain
       DomainValidationOptions:
         - DomainName: !Ref WebSiteDomain
-          ValidationDomain: !Ref WebSiteDomain
+          HostedZoneId: !Ref HostedZone
       ValidationMethod: DNS
 
   HostedZone:
     Type: AWS::Route53::HostedZone
-    DependsOn: SSLCertificate
     Properties:
       HostedZoneConfig:
         Comment: !Ref DomainName
-      Name: !Ref DomainName
+      Name: !Ref WebSiteDomain
 
   Bucket:
     Type: AWS::S3::Bucket
-    DependsOn: HostedZone
     Properties:
       BucketName: !Ref DomainName
       VersioningConfiguration:
@@ -59,7 +58,6 @@ Resources:
 
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
-    DependsOn: Bucket
     Properties:
       DistributionConfig:
         DefaultRootObject: index.html
