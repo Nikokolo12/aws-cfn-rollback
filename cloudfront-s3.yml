@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: "Create S3 bucket sttaic website with CloudFront distribution"
+Description: "Create S3 bucket static website with CloudFront distribution"
 
 Parameters:
   DomainName:
@@ -32,14 +32,9 @@ Resources:
           - Action: "s3:GetObject"
             Effect: "Allow"
             Principal:
-              Service: "cloudfront.amazonaws.com"
+              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
             Resource:
-              - !Sub "${Bucket.Arn}/*"
-              - !Sub "${Bucket.Arn}"
-            Condition:
-              StringEquals:
-                "aws:SourceArn": !Sub >-
-                  "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+              - !Sub "arn:aws:s3:::${Bucket}/*"
 
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
@@ -48,19 +43,24 @@ Resources:
       DistributionConfig:
         DefaultRootObject: index.html
         Origins:
-          - DomainName: !Sub "${Bucket.DomainName}.s3-website-${AWS::Region}.amazonaws.com"
+          - DomainName: !Sub "${Bucket}.s3.website-${AWS::Region}.amazonaws.com"
             OriginPath: ""
             Id: myS3Origin
-            S3OriginConfig:
-              OriginAccessIdentity: !Sub >-
-                origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: "http-only"
         DefaultCacheBehavior:
           Compress: true
           TargetOriginId: myS3Origin
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+          ViewerProtocolPolicy: redirect-to-https
           AllowedMethods:
             - GET
             - HEAD
-          ViewerProtocolPolicy: redirect-to-https
         HttpVersion: http2
         Enabled: true
         IPV6Enabled: true
@@ -68,5 +68,8 @@ Resources:
 Outputs:
   outputS3WebsiteURL:
     Value: !GetAtt Bucket.WebsiteURL
+    Description: "The S3 bucket static website URL"
+
   outputS3BucketRegionalName:
     Value: !GetAtt Bucket.RegionalDomainName
+    Description: "The S3 bucket's regional domain name"
